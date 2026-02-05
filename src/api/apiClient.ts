@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && !error.config.url.includes('/auth/login')) {
             // Clear token and redirect to login
             storage.clearToken();
             window.location.href = '/login';

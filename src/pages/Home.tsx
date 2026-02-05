@@ -123,7 +123,11 @@ const Home: React.FC = () => {
                                     )}
                                     <div className="event-image">
                                         {event.image_path ? (
-                                            <img src={event.image_path} alt={event.title} />
+                                            <img
+                                                src={event.image_path.startsWith('http') ? event.image_path : `http://localhost:3000${event.image_path}`}
+                                                alt={event.title}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
                                         ) : (
                                             <span style={{ fontSize: '3rem' }}>📅</span>
                                         )}

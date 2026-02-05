@@ -47,23 +47,32 @@ const AdminEvents: React.FC = () => {
         fetchData();
     }, []);
 
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess('');
 
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('date_time', dateTime);
+        if (cityId) formData.append('city_id', cityId);
+        if (selectedFile) formData.append('image', selectedFile);
+
         try {
-            await apiClient.post('/events', {
-                title,
-                description,
-                date_time: dateTime,
-                city_id: cityId ? parseInt(cityId) : null
+            await apiClient.post('/events', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             setSuccess('Event created successfully!');
             setTitle('');
             setDescription('');
             setDateTime('');
             setCityId('');
+            setSelectedFile(null);
             fetchData(); // Refresh list
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to create event');
@@ -147,6 +156,20 @@ const AdminEvents: React.FC = () => {
                                 </select>
                             </div>
 
+                            <div className="input-group">
+                                <label htmlFor="image">Event Image</label>
+                                <input
+                                    id="image"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setSelectedFile(e.target.files[0]);
+                                        }
+                                    }}
+                                />
+                            </div>
+
                             <button type="submit" className="btn btn-primary">
                                 Create Event
                             </button>
@@ -161,6 +184,13 @@ const AdminEvents: React.FC = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {events.map(event => (
                                     <div key={event.id} className="event-card" style={{ padding: '1rem' }}>
+                                        {event.image_path && (
+                                            <img
+                                                src={event.image_path.startsWith('http') ? event.image_path : `http://localhost:3000${event.image_path}`}
+                                                alt={event.title}
+                                                style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.5rem' }}
+                                            />
+                                        )}
                                         <h4 style={{ margin: 0 }}>{event.title}</h4>
                                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.25rem 0' }}>
                                             {new Date(event.date_time).toLocaleString()}
