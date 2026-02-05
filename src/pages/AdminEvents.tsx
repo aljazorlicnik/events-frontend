@@ -22,7 +22,7 @@ const AdminEvents: React.FC = () => {
     const [description, setDescription] = useState('');
     const [dateTime, setDateTime] = useState('');
     const [cityId, setCityId] = useState('');
-    const [maxAttendees, setMaxAttendees] = useState('');
+
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -61,7 +61,6 @@ const AdminEvents: React.FC = () => {
         setDescription(event.description);
         setDateTime(event.date_time ? new Date(event.date_time).toISOString().slice(0, 16) : '');
         setCityId(event.cities?.id || '');
-        setMaxAttendees(event.max_attendees ? event.max_attendees.toString() : '');
         setError('');
         setSuccess('');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -73,7 +72,6 @@ const AdminEvents: React.FC = () => {
         setDescription('');
         setDateTime('');
         setCityId('');
-        setMaxAttendees('');
         setSelectedFile(null);
         setError('');
         setSuccess('');
@@ -89,7 +87,6 @@ const AdminEvents: React.FC = () => {
         formData.append('description', description);
         formData.append('date_time', dateTime);
         if (cityId) formData.append('city_id', cityId);
-        if (maxAttendees) formData.append('max_attendees', maxAttendees);
         if (selectedFile) formData.append('image', selectedFile);
 
         try {
@@ -113,7 +110,6 @@ const AdminEvents: React.FC = () => {
             setDescription('');
             setDateTime('');
             setCityId('');
-            setMaxAttendees('');
             setSelectedFile(null);
             setEditingEventId(null);
             fetchData(); // Refresh list
@@ -221,17 +217,7 @@ const AdminEvents: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="input-group">
-                                <label htmlFor="maxAttendees">Max Attendees (Optional)</label>
-                                <input
-                                    id="maxAttendees"
-                                    type="number"
-                                    min="1"
-                                    value={maxAttendees}
-                                    onChange={(e) => setMaxAttendees(e.target.value)}
-                                    placeholder="Leave empty for unlimited"
-                                />
-                            </div>
+
 
                             <div className="input-group">
                                 <label htmlFor="cityId">City</label>

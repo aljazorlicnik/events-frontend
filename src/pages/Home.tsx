@@ -26,6 +26,10 @@ const Home: React.FC = () => {
                 ));
             } else {
                 setEvents(data);
+                console.log('Fetched events:', data);
+                data.forEach(e => {
+                    if (e.is_registered) console.log(`Event ${e.id} is registered`);
+                });
             }
         } catch (err) {
             console.error('Failed to fetch events', err);
@@ -150,18 +154,7 @@ const Home: React.FC = () => {
                                                 minute: '2-digit'
                                             })}
                                         </div>
-                                        {event.max_attendees && typeof event.registrations_count === 'number' && (
-                                            <p style={{
-                                                fontSize: '0.8rem',
-                                                color: event.registrations_count >= event.max_attendees ? '#ef4444' : 'var(--text-secondary)',
-                                                marginBottom: '0.5rem',
-                                                fontWeight: 'bold'
-                                            }}>
-                                                {event.registrations_count >= event.max_attendees
-                                                    ? 'SOLD OUT'
-                                                    : `${event.max_attendees - event.registrations_count} spots left`}
-                                            </p>
-                                        )}
+
                                         {event.cities && (
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 {event.cities.city}, {event.cities.countries?.country}
@@ -172,30 +165,31 @@ const Home: React.FC = () => {
                                         </p>
 
                                         <div className="event-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button
-                                                className="btn btn-join"
-                                                onClick={() => handleJoinEvent(event.id)}
-                                                disabled={!!(event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id}
-                                                style={{
-                                                    flex: 1,
-                                                    opacity: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id ? 0.5 : 1,
-                                                    cursor: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id ? 'not-allowed' : 'pointer'
-                                                }}
-                                            >
-                                                {joiningEventId === event.id ? 'Joining...' :
-                                                    (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees
-                                                        ? 'Sold Out'
-                                                        : (event.is_registered ? 'Join Again' : 'Join Event'))}
-                                            </button>
-
-                                            {event.is_registered && (
+                                            {!event.is_registered ? (
+                                                <button
+                                                    className="btn btn-join"
+                                                    onClick={() => handleJoinEvent(event.id)}
+                                                    disabled={joiningEventId === event.id}
+                                                    style={{
+                                                        flex: 1,
+                                                        opacity: joiningEventId === event.id ? 0.7 : 1,
+                                                        cursor: joiningEventId === event.id ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                >
+                                                    {joiningEventId === event.id ? 'Joining...' : 'Join Event'}
+                                                </button>
+                                            ) : (
                                                 <button
                                                     className="btn btn-leave"
                                                     onClick={() => handleLeaveEvent(event.id)}
                                                     disabled={joiningEventId === event.id}
-                                                    style={{ flex: 1, opacity: joiningEventId === event.id ? 0.7 : 1, cursor: joiningEventId === event.id ? 'not-allowed' : 'pointer' }}
+                                                    style={{
+                                                        flex: 1,
+                                                        opacity: joiningEventId === event.id ? 0.7 : 1,
+                                                        cursor: joiningEventId === event.id ? 'not-allowed' : 'pointer'
+                                                    }}
                                                 >
-                                                    {joiningEventId === event.id ? 'Leaving...' : 'Leave All'}
+                                                    {joiningEventId === event.id ? 'Leaving...' : 'Leave Event'}
                                                 </button>
                                             )}
                                         </div>
