@@ -9,6 +9,8 @@ interface Event {
     date_time: string;
     image_path?: string;
     is_registered?: boolean;
+    max_attendees?: number;
+    registrations_count?: number;
     cities?: {
         city: string;
         countries?: {
@@ -145,6 +147,18 @@ const Home: React.FC = () => {
                                                 minute: '2-digit'
                                             })}
                                         </div>
+                                        {event.max_attendees && typeof event.registrations_count === 'number' && (
+                                            <p style={{
+                                                fontSize: '0.8rem',
+                                                color: event.registrations_count >= event.max_attendees ? '#ef4444' : 'var(--text-secondary)',
+                                                marginBottom: '0.5rem',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {event.registrations_count >= event.max_attendees
+                                                    ? 'SOLD OUT'
+                                                    : `${event.max_attendees - event.registrations_count} spots left`}
+                                            </p>
+                                        )}
                                         {event.cities && (
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <span>📍</span> {event.cities.city}, {event.cities.countries?.country}
@@ -166,8 +180,15 @@ const Home: React.FC = () => {
                                                 <button
                                                     className="btn btn-join"
                                                     onClick={() => handleJoinEvent(event.id)}
+                                                    disabled={!!(event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees)}
+                                                    style={{
+                                                        opacity: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) ? 0.5 : 1,
+                                                        cursor: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) ? 'not-allowed' : 'pointer'
+                                                    }}
                                                 >
-                                                    Join Event
+                                                    {event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees
+                                                        ? 'Sold Out'
+                                                        : 'Join Event'}
                                                 </button>
                                             )}
                                         </div>

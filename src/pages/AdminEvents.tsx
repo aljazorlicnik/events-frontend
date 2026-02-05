@@ -21,8 +21,12 @@ const AdminEvents: React.FC = () => {
     const [description, setDescription] = useState('');
     const [dateTime, setDateTime] = useState('');
     const [cityId, setCityId] = useState('');
+    const [maxAttendees, setMaxAttendees] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Edit state
+    const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -49,6 +53,30 @@ const AdminEvents: React.FC = () => {
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+    const handleEdit = (event: any) => {
+        setEditingEventId(event.id);
+        setTitle(event.title);
+        setDescription(event.description);
+        setDateTime(event.date_time ? new Date(event.date_time).toISOString().slice(0, 16) : '');
+        setCityId(event.cities?.id || '');
+        setMaxAttendees(event.max_attendees ? event.max_attendees.toString() : '');
+        setError('');
+        setSuccess('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancel = () => {
+        setEditingEventId(null);
+        setTitle('');
+        setDescription('');
+        setDateTime('');
+        setCityId('');
+        setMaxAttendees('');
+        setSelectedFile(null);
+        setError('');
+        setSuccess('');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -59,23 +87,37 @@ const AdminEvents: React.FC = () => {
         formData.append('description', description);
         formData.append('date_time', dateTime);
         if (cityId) formData.append('city_id', cityId);
+        if (maxAttendees) formData.append('max_attendees', maxAttendees);
         if (selectedFile) formData.append('image', selectedFile);
 
         try {
-            await apiClient.post('/events', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            setSuccess('Event created successfully!');
+            if (editingEventId) {
+                await apiClient.put(`/events/${editingEventId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                setSuccess('Event updated successfully!');
+            } else {
+                await apiClient.post('/events', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                setSuccess('Event created successfully!');
+            }
+
             setTitle('');
             setDescription('');
             setDateTime('');
             setCityId('');
+            setMaxAttendees('');
             setSelectedFile(null);
+            setEditingEventId(null);
             fetchData(); // Refresh list
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to create event');
+            console.error('Submit error:', err);
+            setError(err.response?.data?.message || `Failed to ${editingEventId ? 'update' : 'create'} event`);
         }
     };
 
@@ -86,7 +128,26 @@ const AdminEvents: React.FC = () => {
                 <div className="admin-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
 
                     <section className="admin-form animate-fade-in" style={{ margin: 0, maxWidth: 'none' }}>
-                        <h2 className="form-title">Add New Event</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h2 className="form-title" style={{ margin: 0 }}>
+                                {editingEventId ? 'Edit Event' : 'Add New Event'}
+                            </h2>
+                            {editingEventId && (
+                                <button
+                                    onClick={handleCancel}
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid var(--text-secondary)',
+                                        color: 'var(--text-secondary)',
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
 
                         {error && <div className="error-message text-center" style={{ marginBottom: '1rem' }}>{error}</div>}
                         {success && <div style={{ color: 'var(--success-color)', textAlign: 'center', marginBottom: '1rem' }}>{success}</div>}
@@ -133,6 +194,18 @@ const AdminEvents: React.FC = () => {
                             </div>
 
                             <div className="input-group">
+                                <label htmlFor="maxAttendees">Max Attendees (Optional)</label>
+                                <input
+                                    id="maxAttendees"
+                                    type="number"
+                                    min="1"
+                                    value={maxAttendees}
+                                    onChange={(e) => setMaxAttendees(e.target.value)}
+                                    placeholder="Leave empty for unlimited"
+                                />
+                            </div>
+
+                            <div className="input-group">
                                 <label htmlFor="cityId">City</label>
                                 <select
                                     id="cityId"
@@ -171,7 +244,7 @@ const AdminEvents: React.FC = () => {
                             </div>
 
                             <button type="submit" className="btn btn-primary">
-                                Create Event
+                                {editingEventId ? 'Update Event' : 'Create Event'}
                             </button>
                         </form>
                     </section>
@@ -198,6 +271,43 @@ const AdminEvents: React.FC = () => {
                                         <p style={{ fontSize: '0.85rem', margin: 0 }}>
                                             {event.cities?.city}, {event.cities?.countries?.country}
                                         </p>
+                                        <div style={{ marginTop: '0.75rem' }}>
+                                            <button
+                                                onClick={() => handleEdit(event)}
+                                                className="btn"
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    fontSize: '0.85rem',
+                                                    marginRight: '0.5rem'
+                                                }}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('Are you sure you want to delete this event?')) {
+                                                        try {
+                                                            await apiClient.delete(`/events/${event.id}`);
+                                                            setEvents(events.filter(e => e.id !== event.id));
+                                                            setSuccess('Event deleted successfully');
+                                                        } catch (err) {
+                                                            console.error('Failed to delete event', err);
+                                                            setError('Failed to delete event');
+                                                        }
+                                                    }
+                                                }}
+                                                className="btn"
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    fontSize: '0.85rem',
+                                                    background: 'rgba(239, 68, 68, 0.2)',
+                                                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                                                    color: '#ef4444'
+                                                }}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {events.length === 0 && <p>No events found.</p>}
