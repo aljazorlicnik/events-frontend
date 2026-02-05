@@ -18,7 +18,6 @@ const Home: React.FC = () => {
     const fetchEvents = async (query?: string) => {
         try {
             const data = await eventService.getEvents();
-            // Simple client-side filter since API doesn't support query yet, or it does but for cleanliness
             if (query) {
                 const lowerQuery = query.toLowerCase();
                 setEvents(data.filter(e =>
@@ -68,7 +67,7 @@ const Home: React.FC = () => {
         } catch (err: any) {
             console.error('Failed to join event', err);
             const errorMessage = err.response?.data?.message || 'Failed to join event';
-            alert(errorMessage); // Simple alert for now, could be a toast later
+            alert(errorMessage);
         } finally {
             setJoiningEventId(null);
         }
@@ -116,7 +115,7 @@ const Home: React.FC = () => {
                         className={`filter-tab ${activeTab === 'mine' ? 'active' : ''}`}
                         onClick={() => setActiveTab('mine')}
                     >
-                        My Events
+                        My Events ({events.filter(e => e.is_registered).length})
                     </button>
                 </div>
 
