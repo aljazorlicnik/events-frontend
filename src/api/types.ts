@@ -13,12 +13,20 @@ export interface RegisterCredentials {
 }
 
 export interface Event {
-    id: string;
-    name: string;
+    id: number;
+    title: string;
     description: string;
-    date: string;
-    location: string;
-    // Add other fields as needed based on backend response
+    date_time: string;
+    image_path?: string;
+    is_registered?: boolean;
+    max_attendees?: number;
+    registrations_count?: number;
+    cities?: {
+        city: string;
+        countries?: {
+            country: string;
+        }
+    };
 }
 
 export interface CreateEventDto {

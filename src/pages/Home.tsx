@@ -1,23 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/layout/Navbar';
 import apiClient from '../api/apiClient';
+import { eventService } from '../api/eventService';
 
-interface Event {
-    id: number;
-    title: string;
-    description: string;
-    date_time: string;
-    image_path?: string;
-    is_registered?: boolean;
-    max_attendees?: number;
-    registrations_count?: number;
-    cities?: {
-        city: string;
-        countries?: {
-            country: string;
-        }
-    }
-}
+import type { Event } from '../api/types';
 
 const Home: React.FC = () => {
     const [events, setEvents] = useState<Event[]>([]);
@@ -26,12 +12,21 @@ const Home: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'all' | 'mine'>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
+    const [joiningEventId, setJoiningEventId] = useState<number | null>(null);
+
     const fetchEvents = async (query?: string) => {
         try {
-            const response = await apiClient.get('/events', {
-                params: query ? { q: query } : {}
-            });
-            setEvents(response.data);
+            const data = await eventService.getEvents();
+            // Simple client-side filter since API doesn't support query yet, or it does but for cleanliness
+            if (query) {
+                const lowerQuery = query.toLowerCase();
+                setEvents(data.filter(e =>
+                    e.title.toLowerCase().includes(lowerQuery) ||
+                    e.description?.toLowerCase().includes(lowerQuery)
+                ));
+            } else {
+                setEvents(data);
+            }
         } catch (err) {
             console.error('Failed to fetch events', err);
         }
@@ -61,20 +56,29 @@ const Home: React.FC = () => {
     };
 
     const handleJoinEvent = async (eventId: number) => {
+        setJoiningEventId(eventId);
         try {
-            await apiClient.post(`/events/${eventId}/registrations`);
+            await eventService.registerForEvent(eventId);
             await fetchEvents(searchQuery);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to join event', err);
+            const errorMessage = err.response?.data?.message || 'Failed to join event';
+            alert(errorMessage); // Simple alert for now, could be a toast later
+        } finally {
+            setJoiningEventId(null);
         }
     };
 
     const handleLeaveEvent = async (eventId: number) => {
+        setJoiningEventId(eventId);
         try {
-            await apiClient.delete(`/events/${eventId}/registrations`);
+            await eventService.unregisterFromEvent(eventId);
             await fetchEvents(searchQuery);
         } catch (err) {
             console.error('Failed to leave event', err);
+            alert('Failed to leave event');
+        } finally {
+            setJoiningEventId(null);
         }
     };
 
@@ -131,13 +135,12 @@ const Home: React.FC = () => {
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
                                         ) : (
-                                            <span style={{ fontSize: '3rem' }}>📅</span>
+                                            <div style={{ width: '100%', height: '100%', backgroundColor: 'rgba(255,255,255,0.05)' }}></div>
                                         )}
                                     </div>
                                     <div className="event-content">
                                         <h3>{event.title}</h3>
                                         <div className="event-date">
-                                            <span>📅</span>
                                             {new Date(event.date_time).toLocaleDateString(undefined, {
                                                 weekday: 'long',
                                                 year: 'numeric',
@@ -161,34 +164,38 @@ const Home: React.FC = () => {
                                         )}
                                         {event.cities && (
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <span>📍</span> {event.cities.city}, {event.cities.countries?.country}
+                                                {event.cities.city}, {event.cities.countries?.country}
                                             </p>
                                         )}
                                         <p className="event-description">
                                             {event.description || 'No description provided.'}
                                         </p>
 
-                                        <div className="event-actions">
-                                            {event.is_registered ? (
+                                        <div className="event-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                className="btn btn-join"
+                                                onClick={() => handleJoinEvent(event.id)}
+                                                disabled={!!(event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id}
+                                                style={{
+                                                    flex: 1,
+                                                    opacity: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id ? 0.5 : 1,
+                                                    cursor: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) || joiningEventId === event.id ? 'not-allowed' : 'pointer'
+                                                }}
+                                            >
+                                                {joiningEventId === event.id ? 'Joining...' :
+                                                    (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees
+                                                        ? 'Sold Out'
+                                                        : (event.is_registered ? 'Join Again' : 'Join Event'))}
+                                            </button>
+
+                                            {event.is_registered && (
                                                 <button
                                                     className="btn btn-leave"
                                                     onClick={() => handleLeaveEvent(event.id)}
+                                                    disabled={joiningEventId === event.id}
+                                                    style={{ flex: 1, opacity: joiningEventId === event.id ? 0.7 : 1, cursor: joiningEventId === event.id ? 'not-allowed' : 'pointer' }}
                                                 >
-                                                    Leave Event
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    className="btn btn-join"
-                                                    onClick={() => handleJoinEvent(event.id)}
-                                                    disabled={!!(event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees)}
-                                                    style={{
-                                                        opacity: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) ? 0.5 : 1,
-                                                        cursor: (event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees) ? 'not-allowed' : 'pointer'
-                                                    }}
-                                                >
-                                                    {event.max_attendees && event.registrations_count !== undefined && event.registrations_count >= event.max_attendees
-                                                        ? 'Sold Out'
-                                                        : 'Join Event'}
+                                                    {joiningEventId === event.id ? 'Leaving...' : 'Leave All'}
                                                 </button>
                                             )}
                                         </div>

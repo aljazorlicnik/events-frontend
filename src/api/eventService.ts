@@ -12,11 +12,11 @@ export const eventService = {
         return response.data;
     },
 
-    registerForEvent: async (eventId: string): Promise<void> => {
+    registerForEvent: async (eventId: string | number): Promise<void> => {
         await apiClient.post(`/events/${eventId}/registrations`);
     },
 
-    unregisterFromEvent: async (eventId: string): Promise<void> => {
+    unregisterFromEvent: async (eventId: string | number): Promise<void> => {
         await apiClient.delete(`/events/${eventId}/registrations`);
     },
 

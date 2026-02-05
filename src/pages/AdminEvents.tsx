@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/layout/Navbar';
 import apiClient from '../api/apiClient';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
 
 interface City {
     id: number;
@@ -27,6 +28,7 @@ const AdminEvents: React.FC = () => {
 
     // Edit state
     const [editingEventId, setEditingEventId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -118,6 +120,32 @@ const AdminEvents: React.FC = () => {
         } catch (err: any) {
             console.error('Submit error:', err);
             setError(err.response?.data?.message || `Failed to ${editingEventId ? 'update' : 'create'} event`);
+        }
+    };
+
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<any>(null);
+
+    const handleDeleteClick = (event: any) => {
+        setEventToDelete(event);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!eventToDelete) return;
+
+        setDeletingId(eventToDelete.id);
+        try {
+            await apiClient.delete(`/events/${eventToDelete.id}`);
+            setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
+            setSuccess('Event deleted successfully');
+            setDeleteModalOpen(false);
+            setEventToDelete(null);
+        } catch (err) {
+            console.error('Failed to delete event', err);
+            setError('Failed to delete event');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -284,28 +312,20 @@ const AdminEvents: React.FC = () => {
                                                 Edit
                                             </button>
                                             <button
-                                                onClick={async () => {
-                                                    if (window.confirm('Are you sure you want to delete this event?')) {
-                                                        try {
-                                                            await apiClient.delete(`/events/${event.id}`);
-                                                            setEvents(events.filter(e => e.id !== event.id));
-                                                            setSuccess('Event deleted successfully');
-                                                        } catch (err) {
-                                                            console.error('Failed to delete event', err);
-                                                            setError('Failed to delete event');
-                                                        }
-                                                    }
-                                                }}
+                                                onClick={() => handleDeleteClick(event)}
                                                 className="btn"
+                                                disabled={deletingId === event.id}
                                                 style={{
                                                     padding: '0.25rem 0.75rem',
                                                     fontSize: '0.85rem',
                                                     background: 'rgba(239, 68, 68, 0.2)',
                                                     border: '1px solid rgba(239, 68, 68, 0.5)',
-                                                    color: '#ef4444'
+                                                    color: '#ef4444',
+                                                    cursor: deletingId === event.id ? 'not-allowed' : 'pointer',
+                                                    opacity: deletingId === event.id ? 0.7 : 1
                                                 }}
                                             >
-                                                Delete
+                                                {deletingId === event.id ? 'Deleting...' : 'Delete'}
                                             </button>
                                         </div>
                                     </div>
@@ -316,6 +336,15 @@ const AdminEvents: React.FC = () => {
                     </section>
                 </div>
             </main>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => !deletingId && setDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Event"
+                message={`Are you sure you want to delete "${eventToDelete?.title}"? This action cannot be undone.`}
+                isLoading={!!deletingId}
+            />
         </div>
     );
 };
