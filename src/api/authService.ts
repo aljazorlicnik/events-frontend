@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 import { storage } from '../utils/storage';
-import { AuthResponse, LoginCredentials, RegisterCredentials } from './types';
+import type { AuthResponse, LoginCredentials, RegisterCredentials } from './types';
 
 export const authService = {
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
