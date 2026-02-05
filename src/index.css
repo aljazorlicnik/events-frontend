@@ -413,6 +413,8 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 600px;
+  /* Prevent description from taking too much width before QR code */
 }
 
 .event-list-actions {

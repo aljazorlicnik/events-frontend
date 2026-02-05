@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Navbar from '../components/layout/Navbar';
 import apiClient from '../api/apiClient';
 import { eventService } from '../api/eventService';
+import { QRCodeSVG } from 'qrcode.react';
 
 import type { Event } from '../api/types';
 
@@ -225,6 +226,14 @@ const Home: React.FC = () => {
                                                 <p className="event-list-description">
                                                     {event.description || 'No description provided.'}
                                                 </p>
+                                            </div>
+                                            <div className="event-list-qr" style={{ padding: '0 1.5rem' }}>
+                                                <div style={{ background: 'white', padding: '0.5rem', borderRadius: '8px' }}>
+                                                    <QRCodeSVG
+                                                        value={`EVENT-${event.id}-USER-${user?.id}-${Math.random().toString(36).substring(7)}`}
+                                                        size={64}
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="event-list-actions">
                                                 <button
